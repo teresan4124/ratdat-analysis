@@ -1,0 +1,466 @@
+---
+title: "Sexual Dimorphism and Seasonal Variation in Rodent Body Weights"
+author: "Teresa(Ngoc) Nguyen"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document
+---
+
+<!-- INSTRUCTIONS
+
+You will carry out a project in which you statistically analyze a data set to
+answer an appropriate biological question. The goal of this project is for you
+to carry out an independent application of the methods and skills you will
+learn in this class. Your work on this project will be spread out over several
+modules, beginning with Module 2.
+
+You will write your report using R Markdown, which is an extremely powerful and
+flexible system for writing reports, html pages, presentations, and other
+documents. You are free to explore R Markdown's features and use things not
+covered in this class. More information about R Markdown can be found at
+https://rmarkdown.rstudio.com/articles.html.
+
+A template for you to follow when writing your report is provided below.
+
+The dataset that you will be analyzing comes from a project studying the effects
+of rodents and ants on plant communities. It has been running for nearly 40
+years in Portal, AZ. The data you will work with is a time-series of small
+mammals. The rodents are sampled from 24 plots, with different experimental
+manipulations. More information about the dataset can be found at
+
+- https://github.com/weecology/ratdat
+- https://www.biorxiv.org/content/10.1101/332783v3
+- https://doi.org/10.6084/m9.figshare.1314459
+- https://datacarpentry.org/ecology-workshop/data.html
+
+You will not be using the full dataset. You will be using a subset of the data
+that can be accessed via the R's `ratdat` package. Using ratdat's `complete`
+dataset, write a report testing **two** of the hypotheses described below, using
+appropriate statistical tests, figures, and tables.
+
+1. Sexual dimorphism is common in the animal kingdom. How many rodent species
+   are sexually dimorphic with respect to body size?
+
+6. Species distributions can change over time. Are there any trends in the
+   proportion of different species captured over time?
+-->
+
+## Introduction
+Long-term ecological studies are essential for understanding how natural systems change and adapt over time. Such studies provide insights into evolutionary processes, ecological theory, and the impacts of human activity on ecosystems. The Portal Project, a long-term ecological study established in 1977 in the Chihuahuan Desert of Arizona provides over four decades of rodent, plant, and ant community data. These data have contributed to over 100 scientific publications and serve as a foundation for investigating competition, community dynamics, and ecosystem responses to environmental change.
+
+Rodents in this system are central to ecological processes such as seed predation and granivory, making their population dynamics and traits important to study. One fundamental biological question in rodent ecology concerns sexual dimorphism. Sexual dimorphism in mammals often arises from differences in reproductive roles, mate competition, or ecological niche use. While sexual dimorphism has been widely documented across the animal kingdom, not all species exhibit it, and patterns can vary across taxa and environments. Identifying which species show sexual dimorphism in body size can provide insight into the selective pressures acting on these desert rodents.
+
+In addition to sexual dimorphism, long-term data allow us to explore how species distributions change over time. Understanding temporal trends in species’ relative abundances is important for tracking community dynamics, detecting responses to environmental fluctuations, and predicting long-term ecosystem changes.
+
+The central research question of this study is: Do rodent species differ in weight between sexes, and how do species proportions change over time? By addressing these questions, this project aims to fill a gap in knowledge about the role of sexual dimorphism in rodent body size within desert ecosystems, while also assessing long-term shifts in species distributions.
+
+Hypothesis: Some rodent species in the Portal dataset will exhibit sexual dimorphism in body size, with males expected to weigh more than females. Additionally, species proportions are predicted to stay the same over the months, reflecting constant sampling.
+
+General strategy: Using the Portal Project rodent dataset, I tested for sexual dimorphism in weight across three species, fulvescens, leucopus, and ochrognathus, and examined trends in species proportions through time-series analyses of capture data.
+
+## Materials and Methods
+### Study Site and Data Collection
+Data for this study were obtained from the Portal Project, a long-term ecological study located on a 20-hectare site in the Chihuahuan Desert near Portal, Arizona (31.937769, −109.08029). The project began in 1977 and was designed to investigate competition among rodents and ants in a resource-limited system (Brown, 1998). Over time, the habitat has transitioned from desert grassland to mixed shrubland. The site consists of 24 experimental plots, each 50 × 50 m, enclosed with fencing and subjected to different rodent and ant access treatments.
+
+Rodent sampling is conducted monthly around the new moon to maximize capture efficiency. On each trapping night, one baited Sherman live trap is placed at each of the 49 permanent stakes within a plot. Captured rodents are processed following IACUC-approved handling protocols, and measurements include species, sex, weight, reproductive condition, and hind foot length. Since 1991, individuals have been tagged with Passive Integrated Transponder (PIT) tags, allowing for long-term tracking of individuals. This dataset, spanning more than four decades, is publicly available on Zenodo (https://doi.org/10.5281/zenodo.1215988
+).
+
+### Data Processing and Variables
+For this project, the analysis focused on rodent body weight as the response variable, with predictors including sex and month. The first research question addressed whether rodent species exhibit sexual dimorphism in body size. To ensure adequate sample sizes for statistical testing, species with too few observations were excluded. For the second research question, species distributions over time were analyzed to identify trends in proportional representation of species captured.
+
+### Statistical Analyses
+
+All analyses were conducted in R (v.4.3.0).
+
+#### Question 1: Sexual Dimorphism in Body Size
+
+To test whether rodent species show sexual dimorphism in body weight, the following steps were taken:
+
+Sample size filtering: Species with extremely small or unbalanced male/female sample sizes were excluded to avoid unreliable inference.
+Assumption testing: For each species with sufficient data, the variance in weight between sexes was tested using Levene’s Test for homogeneity of variance. The distribution of residuals was evaluated visually using QQ plots and formally with the Shapiro-Wilk test.
+Statistical test: Where assumptions of normality and equal variance were met, a two-sample t-test was applied to compare mean weights between sexes. If assumptions were violated, nonparametric alternatives were considered.
+
+#### Question 3: Species Distributions Over Time
+
+To evaluate whether species distributions changed over time, species-specific weights were grouped by month.
+
+For each of three focal species, the following steps were taken:
+Assumption testing: Homogeneity of variance was tested with Levene’s Test, and normality was assessed with QQ plots and the Shapiro-Wilk test.
+Nonparametric testing: Because weight distributions were not normally distributed, the Kruskal-Wallis rank-sum test was used to test for differences in weight across months. This nonparametric test does not require the assumption of normality and is appropriate for comparing medians among groups.
+ 
+```{r setup, include = FALSE}
+# Setup code that will be executed but not printed
+
+library(ratdat)
+library(car)
+library(dplyr)
+
+#exploring data
+View(complete)
+summary(complete)
+colnames(complete)
+summary(complete$species_id)
+unique(complete$species_id)
+unique(complete$species)
+
+```
+
+This is what the data looks like.
+```{r echo = FALSE}
+head(complete)
+```
+
+## Analysis and Results
+
+I checked the counts of species that have too few or too many counts for weights. 
+
+```{r include = FALSE}
+# Create a data frame with the counts
+n_species <- data.frame(
+  Species = c("spilosoma", "intermedius", "merriami"),
+  Male_Count = c(
+    sum(complete$species == "spilosoma" & complete$sex == "M"),
+    sum(complete$species == "intermedius" & complete$sex == "M"),
+    sum(complete$species == "merriami" & complete$sex == "M")
+  ),
+  Female_Count = c(
+    sum(complete$species == "spilosoma" & complete$sex == "F"),
+    sum(complete$species == "intermedius" & complete$sex == "F"),
+    sum(complete$species == "merriami" & complete$sex == "F")
+  )
+)
+n_species
+#we can now exclude these three species 
+```
+
+
+
+Now, I can exclude these three species when I clean the dataset. 
+```{r include = FALSE}
+#clean data 
+#make new dataset with only sex, species, and weight
+df1 <- complete[, c("sex", "species", "weight")] 
+
+#exclude species with too few or too many weights
+exclude_species <- c("spilosoma", "intermedius", "merriami")
+
+#remove NA and empty cells 
+df1_clean <- df1[
+  !(df1$species %in% exclude_species) &   # drop chosen species
+  df1$species != "" &                     # drop empty species
+  df1$sex != "" &                         # drop empty sex
+  !is.na(df1$sex) & !is.na(df1$species) & !is.na(df1$weight),  # drop NA
+]
+
+# check results
+summary(df1_clean)
+unique(df1_clean$species)
+
+#check lengths of columns 
+length(df1_clean$sex)
+length(df1_clean$species)
+length(df1_clean$weight)
+```
+```{r include = FALSE}
+#make sure the counts are between 3 and 5000 to check for normal distribution
+sex_counts <- as.data.frame(table(df1_clean$species, df1_clean$sex))
+colnames(sex_counts) <- c("species", "sex", "count")
+
+head(sex_counts)
+View(sex_counts)
+
+low_n <- subset(sex_counts, count < 3)
+print(low_n)
+high_n <- subset(sex_counts, count > 5000)
+print(high_n)
+
+```
+
+Using shapiro-wilk, I checked the species for normality. 
+```{r echo = FALSE}
+# Get unique species and sexes
+species_list <- unique(df1_clean$species)
+sex_list <- unique(df1_clean$sex)
+
+# Create empty results dataframe
+normality_results <- data.frame(
+  species = character(),
+  sex = character(),
+  n = integer(),
+  shapiro_p = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop through species × sex
+for (sp in species_list) {
+  for (sx in sex_list) {
+    # Subset
+    sp_data <- subset(df1_clean, species == sp & sex == sx)$weight
+    
+    # Only run if at least 3 samples
+    if (length(sp_data) >= 3) {
+      shapiro_p <- shapiro.test(sp_data)$p.value
+    } else {
+      shapiro_p <- NA
+    }
+    
+    # Store results
+    normality_results <- rbind(
+      normality_results,
+      data.frame(
+        species = sp,
+        sex = sx,
+        n = length(sp_data),
+        shapiro_p = shapiro_p
+      )
+    )
+  }
+}
+
+# Inspect results
+head(normality_results)
+
+```
+After I get those results, I made a dataset for the species with a p-value greater than 0.05, which means those species have a nomral distribution. However, some species had a normal distribution only for one sex which means those cannot be used for parametric tests that assume normality. 
+```{r echo = FALSE}
+#make dataset with species with normal distribution 
+#check which species have low p value
+names(normality_results)
+
+normality_df <- as.data.frame(normality_results)
+
+high_shapiro_p <- normality_df[normality_df$shapiro_p > 0.05, ]
+
+#only male sp, male hispidus, and male taylori have normal distribution, can't use t test
+#species with normal distributions for male and female are fulvescens, montanus, ochrognathus, and leucopus
+
+print(normality_df[normality_df$species == "fulvescens", ])
+print(normality_df[normality_df$species == "leucopus", ])
+print(normality_df[normality_df$species == "montanus", ])
+print(normality_df[normality_df$species == "ochrognathus", ])
+
+```
+Fulvescens, montanus, leucopus, and ochrognathus have normal distribution, so they can use a t test, but I also need to check the variance. Montanus also has a very small sample size so I used the other three species. 
+```{r include = FALSE}
+#make subsets for the species
+fulvescens.df <- df1_clean[df1_clean$species == "fulvescens", ]
+leucopus.df <- df1_clean[df1_clean$species == "leucopus", ]
+ochrognathus.df <- df1_clean[df1_clean$species == "ochrognathus", ]
+```
+
+```{r echo = FALSE}
+#check variance for fulvescens, montanus, and ochrognathus. 
+leveneTest(weight ~ sex, data = fulvescens.df)
+leveneTest(weight ~ sex, data = leucopus.df)
+leveneTest(weight ~ sex, data = ochrognathus.df)
+#variances > 0.05 which means the variances are normal 
+```
+I was able to run the appropriate t-tests for each species. 
+```{r}
+#t test for fulvescens, leucopus, and ochrognathus. 
+print(stats::t.test(weight ~ sex, data = fulvescens.df, var.equal = FALSE))
+
+print(stats::t.test(weight ~ sex, data = leucopus.df, var.equal = TRUE))
+
+print(stats::t.test(weight ~ sex, data = ochrognathus.df, var.equal = TRUE))
+```
+
+```{r include = FALSE}
+sd(fulvescens.df$weight[fulvescens.df$sex == "F"])
+sd(fulvescens.df$weight[fulvescens.df$sex == "M"])
+
+sd(leucopus.df$weight[leucopus.df$sex == "F"])
+sd(leucopus.df$weight[leucopus.df$sex == "M"])
+
+sd(ochrognathus.df$weight[ochrognathus.df$sex == "F"])
+sd(ochrognathus.df$weight[ochrognathus.df$sex == "M"])
+
+mean(fulvescens.df$weight[fulvescens.df$sex == "F"])
+mean(fulvescens.df$weight[fulvescens.df$sex == "M"])
+
+mean(leucopus.df$weight[leucopus.df$sex == "F"])
+mean(leucopus.df$weight[leucopus.df$sex == "M"])
+
+mean(ochrognathus.df$weight[ochrognathus.df$sex == "F"])
+mean(ochrognathus.df$weight[ochrognathus.df$sex == "M"])
+
+```
+
+Fulvescens has a very low p-value(0.004), leucopus and ochrognathus have high p-values(0.66, 0.96).
+
+These box plots are a visual interpretation of the data. 
+```{r echo = FALSE, fig.cap="Figure 1: Boxplot of body weight for Peromyscus fulvescens separated by sex. Females (pink) are heavier than males (blue), showing evidence of sexual dimorphism."}
+#boxplots 
+box_colors <- c("lightblue", "lightpink")  # Male = blue, Female = pink
+boxplot(weight ~ sex, data = fulvescens.df,
+        xlab = "Sex",
+        ylab = "Weight (g)",
+        main = "Fulvescens weight by sex",
+        col = c("lightpink", "lightblue"))
+legend("topright",
+       legend = c("Male", "Female"),
+       fill = box_colors,
+       bty = "n")
+```
+
+```{r echo = FALSE, fig.cap = "Figure 2: Boxplot of body weight for Peromyscus leucopus separated by sex. No significant difference in weight between females (pink) and males (blue) is observed."}
+box_colors <- c("lightblue", "lightpink")  # Male = blue, Female = pink
+boxplot(weight ~ sex, data = leucopus.df,
+        xlab = "Sex",
+        ylab = "Weight (g)",
+        main = "Leucopus weight by sex",
+        col = c("lightpink", "lightblue"))
+legend("topright",
+       legend = c("Male", "Female"),
+       fill = box_colors,
+       bty = "n")
+```
+
+```{r echo = FALSE, fig.cap = "Figure 3: Boxplot of body weight for Neotoma ochrognathus separated by sex. Females (pink) and males (blue) show similar weights, indicating no sexual dimorphism."}
+box_colors <- c("lightblue", "lightpink")  # Male = blue, Female = pink
+boxplot(weight ~ sex, data = ochrognathus.df,
+        xlab = "Sex",
+        ylab = "Weight (g)",
+        main = "Ochrognathus weight by sex",
+        col = c("lightpink", "lightblue"))
+legend("topright",
+       legend = c("Male", "Female"),
+       fill = box_colors,
+       bty = "n")
+```
+
+
+```{r include = FALSE}
+#make new dataset that includes month
+df_2 <- complete[, c("month", "species", "weight")] 
+
+#clean the new dataset by removing rows with NA and empty cells
+df_2_clean <- df_2[complete.cases(df_2), ]
+
+# Remove rows where species, year, or month is empty string
+df_2_clean <- df_2_clean[df_2_clean$species != "" & 
+                         df_2_clean$weight != "" & 
+                         df_2_clean$month != "", ]
+```
+
+```{r include = FALSE}
+# check results
+summary(df_2_clean)
+colnames(df_2_clean)
+
+#check lengths of columns 
+length(df_2_clean$weight)
+length(df_2_clean$month)
+length(df_2_clean$species)
+```
+
+```{r include = FALSE}
+#subset the data 
+leucopus.month.df <- df_2_clean[df_2_clean$species == "leucopus", ]
+fulvescens.month.df <- df_2_clean[df_2_clean$species == "fulvescens", ]
+ochrognathus.month.df <- df_2_clean[df_2_clean$species == "ochrognathus", ]
+```
+
+To determine if there is an effect of the month on weight measurements of rodents, I made a regression model for each species.
+
+```{r echo = FALSE}
+fulvescens.model <- lm(weight ~ month, data = fulvescens.month.df)
+print(fulvescens.model)
+```
+```{r echo = FALSE}
+leucopus.model <- lm(weight ~ month, data = leucopus.month.df)
+print(leucopus.model)
+```
+
+```{r echo = FALSE}
+ochrognathus.model <- lm(weight ~ month, data = ochrognathus.month.df)
+print(ochrognathus.model)
+```
+
+```{r include = FALSE}
+fulvescens.month.df$res <- residuals(fulvescens.model)
+colnames(fulvescens.month.df)
+
+leucopus.month.df$res <- residuals(leucopus.model)
+colnames(leucopus.month.df)
+
+ochrognathus.month.df$res <- residuals(ochrognathus.model)
+colnames(ochrognathus.month.df)
+```
+
+Looking at distrbution and variance for fulvescens, leucopus, and ochrognathus.  
+
+```{r echo = FALSE, fig.cap = "Figure 4: Q-Q plot of body weights by month, showing deviation from normality, along with Levene’s test results for homogeneity of variance."}
+#	fulvescens, montanus, ochrognathus
+fulvescens.month.df <- df_2_clean[df_2_clean$species == "fulvescens", ]
+
+qqnorm(fulvescens.month.df$weight, main = "Q-Q Plot of Fulvescens Weight")
+qqline(fulvescens.month.df$weight, col = "red", lwd = 2)
+
+print(leveneTest(weight ~ as.factor(month), data = fulvescens.month.df))
+```
+
+```{r echo = FALSE, fig.cap = "Figure 5: Q-Q plot of body weights by month, showing deviation from normality, along with Levene’s test results for homogeneity of variance."}
+leucopus.month.df <- df_2_clean[df_2_clean$species == "leucopus", ]
+
+qqnorm(leucopus.month.df$weight, main = "Q-Q Plot of Fulvescens Weight")
+qqline(leucopus.month.df$weight, col = "red", lwd = 2)
+
+print(leveneTest(weight ~ as.factor(month), data = leucopus.month.df))
+```
+
+```{r echo = FALSE, fig.cap = "Figure 6: Q-Q plot of body weights by month, showing deviation from normality, along with Levene’s test results for homogeneity of variance."}
+ochrognathus.month.df <- df_2_clean[df_2_clean$species == "ochrognathus", ]
+
+qqnorm(ochrognathus.month.df$weight, main = "Q-Q Plot of ochrognathus Weight")
+qqline(ochrognathus.month.df$weight, col = "red", lwd = 2)
+
+print(leveneTest(weight ~ as.factor(month), data = ochrognathus.month.df))
+```
+
+All three species have normal variance, but abnormal distribution so I used Kruskal Wallis.  
+```{r echo = FALSE}
+kruskal.test(weight ~ as.factor(month), data = fulvescens.month.df)
+kruskal.test(weight ~ as.factor(month), data = leucopus.month.df)
+kruskal.test(weight ~ as.factor(month), data = ochrognathus.month.df)
+```
+
+Fulvescens has a small p-value, but not smaller than 0.05 while leucopus and ochrognathus have a very large p-value. 
+
+```{r echo = FALSE, fig.cap = "Figure 7: Boxplot of Peromyscus fulvescens body weight by month. Weight variation across months is minimal, and the Kruskal-Wallis test shows a marginally non-significant effect of month."}
+boxplot(weight ~ month, data = fulvescens.month.df,
+        xlab = "Month", ylab = "Weight",
+        main = "Fulvescens weight by month",
+        col = "lightblue", outline = FALSE)
+```
+
+```{r echo = FALSE, fig.cap = "Figure 8: Boxplot of Peromyscus leucopus body weight by month. No significant monthly variation in body weight is observed."}
+boxplot(weight ~ month, data = leucopus.month.df,
+        xlab = "Month", ylab = "Weight",
+        main = "Leucopus weight by month",
+        col = "lightblue", outline = FALSE)
+```
+
+```{r echo = FALSE, fig.cap = "Figure 9: Boxplot of Neotoma ochrognathus body weight by month. Monthly body weight remains consistent, with no significant differences detected."}
+boxplot(weight ~ month, data = ochrognathus.month.df,
+        xlab = "Month", ylab = "Weight",
+        main = "Ochrognathus weight by month",
+        col = "lightblue", outline = FALSE)
+```
+I first tested for sexual dimorphism in body weight across three rodent species. For Peromyscus fulvescens, Welch’s two-sample t-test indicated a significant difference between sexes, t(60.63) = 2.98, p = 0.004, with females (M = 13.68 g, SD = 2.38) being heavier than males (M = 12.44 g, SD = 1.15). In contrast, no significant sexual dimorphism was observed in Peromyscus leucopus, t(33) = 0.45, p = 0.66, with females (M = 19.31 g, SD = 4.91) and males (M = 18.68 g, SD = 3.33) showing similar weights, or in Neotoma ochrognathus, t(39) = -0.05, p = 0.96, with females (M = 55.32 g, SD = 23.70) and males (M = 55.70 g, SD = 16.53) having comparable weights. These results indicate that sexual dimorphism is present only in P. fulvescens.
+
+To assess whether rodent weights varied across months, Kruskal–Wallis rank-sum tests were performed due to non-normal weight distributions. For P. fulvescens, monthly weight variation was marginally non-significant, χ²(10) = 17.50, p = 0.064. For P. leucopus, no significant monthly differences were detected, χ²(9) = 8.64, p = 0.47, and for N. ochrognathus, weight remained consistent across months, χ²(11) = 5.89, p = 0.88. These results suggest minimal seasonal variation in body weight for the species examined.
+
+## Discussion
+
+This analysis examined sexual dimorphism and potential seasonal biases in rodent body weight using long-term data from the Portal Project. We found evidence of sexual dimorphism in Peromyscus fulvescens, where females were significantly heavier than males. This aligns with the broader ecological understanding that sexual dimorphism in rodents can vary among species, often reflecting differences in reproductive investment or ecological niche partitioning. By contrast, P. leucopus and N. ochrognathus did not exhibit sex-based weight differences, suggesting either reduced selective pressure for dimorphism or that weight is not the primary trait under sexual selection in these species.
+
+When considering seasonal variation, weights were largely stable across months, with only P. fulvescens showing a weak trend toward month-to-month differences. This marginal effect could indicate subtle seasonal influences on body condition, such as food availability or breeding cycles, though the lack of statistical significance suggests these patterns are not strong. Importantly, the absence of a significant monthly effect in most cases reduces concern that seasonal sampling bias confounds weight measurements in the dataset.
+
+Overall, the results partially support the hypothesis that sexual dimorphism influences rodent body weight, but only in one of the three focal species. Seasonal effects were negligible, indicating that the Portal Project’s sampling regime provides robust data on rodent weight independent of month.
+
+## Acknowledgements
+
+## References
+Ernest, S. K. M., Yenni, G. M., Allington, G., Bledsoe, E. K., Christensen, E. M., Diaz, R. M., Geluso, K., Goheen, J. R., Guo, Q., Heske, E., Kelt, D., Meiners, J. M., Munger, J., Restrepo, C., Samson, D. A., Schutzenhofer, M. R., Skupski, M., Supp, S. R., Thibault, K., … Valone, T. J. (2020). The Portal Project: A long-term study of a Chihuahuan desert ecosystem (p. 332783). bioRxiv. https://doi.org/10.1101/332783
+
